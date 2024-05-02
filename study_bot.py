@@ -27,114 +27,105 @@ START_ROUTES, END_ROUTES = range(2)
 # Callback data
 STAGE_ONE, STAGE_TWO, STAGE_THREE, STAGE_FOUR = range(4)
 
-def get_files(folder):
-    files = []
-    for file in os.listdir(folder):
-        if os.path.isfile(os.path.join(folder, file)):
-            files.append(file)
-    
-    return files
 
+def groupet(array, num=3):
+    return [array[i:i + num] for i in range(0, len(array), num)]
+
+
+
+class section: 
+    id: int
+    name: str
+    text: str
+    sections: list
+
+    key = 'section_'
+    
+    def __init__(self, id: int, name: str, text: str=''):
+        self.id = id
+        self.name = name
+        self.text = text
+
+   
+    def get_inline_button(self):
+        return InlineKeyboardButton(self.name, callback_data=self.key+str(self.id))
+
+class course: 
+    id: int
+    name: str
+    key = 'course_'
+
+def __init__(self, id: int, name: str, sections: list):
+    self.id = id
+    self.name = name
+    self.sections = sections
+
+    def get_inline_button(self):
+        return InlineKeyboardButton(self.name, callback_data=self.key+str(self.id))
+
+courses = [
+    course(1, "Python", [section(1, 'Урок 1'), section(2, 'Урок 2'), section(3, 'Урок 3')]),
+    course(2, "SQL",[section(1, 'Урок 1'), section(2, 'Урок 2'), section(3, 'Урок 3')]),
+    course(3, "PHP", [section(1, 'Урок 1'), section(2, 'Урок 2'), section(3, 'Урок 3')]),
+    course(4, "Telegram", [section(1, 'Урок 1'), section(2, 'Урок 2'), section(3, 'Урок 3')]),
+    course(5, "HTML", [section(1, 'Урок 1'), section(2, 'Урок 2'), section(3, 'Урок 3')]),
+]
+
+
+def get_course_by_course_key(course_key):
+    id = int(course_key.replace(course.key, ''))
+
+    for c in courses: 
+        if c.id == id:
+            return c
+
+    return None
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Sends a message with three inline buttons attached."""
 
-    
-    keyboard = [
-        [
-            InlineKeyboardButton("Python", callback_data="1"),
-            InlineKeyboardButton("SQL", callback_data="2"),
-            InlineKeyboardButton("PHP", callback_data="3"),
-            InlineKeyboardButton("Telegram", callback_data="4"),
-            InlineKeyboardButton("HTML", callback_data="5"),
-        ],
-        [InlineKeyboardButton("Random", callback_data="0")],
-    ]
+    courses = groupet([c.get_inline_button() for c in courses], 3)
 
+    keyboard = courses
+        
     reply_markup = InlineKeyboardMarkup(keyboard)
-    
-
     await update.message.reply_text("Выберите курс", reply_markup=reply_markup)
     return START_ROUTES
-async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Parses the CallbackQuery and updates the message text."""
+
+
+
+async def course_deteil(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show new choice of buttons"""
     query = update.callback_query
+    course=get_course_by_course_key(query.data)
 
-    # CallbackQueries need to be answered, even if no notification to the user is needed
-    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
+    #print(
+     #   'course',
+     #  course.id,
+     # course.name
+    #)
+
     await query.answer()
-
-    folder = ''
-
-    if query.data == '1':
-        folder = 'images\cats'
-    elif query.data == '2':
-        folder = 'images\dogs'
-    else:
-        folder = 'images\cats'
-
-    c = []
-
-    files = get_files(folder)
-
-    random_file = random.choice(files)
-    print('Random file:', random_file)
-
-    image_path = f'/{folder}/{random_file}'
-
-    await query.message.reply_photo(
-     photo=open(image_path, 'rb'),
-    )
-
-    # print(update.callback_query.message.chat.id)
-
-    # await query.edit_message_text(
-    #     text=f"Selected option: {query.data}",
-    #     reply_markup=InlineKeyboardMarkup(
-    #         [
-    #             [
-    #                 InlineKeyboardButton(
-    #                     text="Back",
-    #                     callback_data="back",
-    #                 )
-    #             ]
-    #         ]
-    #     )
-    # )
-    #
-    # await update.get_bot().send_photo(
-    #     chat_id=update.callback_query.message.chat.id,
-    #     photo=open(image_path, 'rb'),
-    # )
-
-    # await query.edit_message_text(text=f"Selected option: {query.data}")
-
-
-async def one(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Displays info on how to use the bot."""
-    await update.message.reply_text("STAGE_ONE 1")
-
-   
+    keyboard = section_keyboard
+    replay_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        text= f'курс по: {course_name}', reply_markup=replay_markup)
+    return START_ROUTES
 
 def main() -> None:
     """Run the bot."""
     # Create the Application and pass it your bot's token.
     TOKEN = '6734422120:AAFpCuIJzF1PZrd3xGE-IlEEKtDpkcPGcp0'
-    application = Application.builder().token(TOKEN).build()
 
-    #application.add_handler(CommandHandler("start", start))
-    #application.add_handler(CallbackQueryHandler(button))
-    #application.add_handler(CommandHandler("help", help_command))
+    application = Application.builder().token(TOKEN).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
             START_ROUTES: [
-                CallbackQueryHandler(one, pattern="^" + str(STAGE_ONE) + "$"),
-                #CallbackQueryHandler(two, pattern="^" + str(TWO) + "$"),
-                #CallbackQueryHandler(three, pattern="^" + str(THREE) + "$"),
-                #CallbackQueryHandler(four, pattern="^" + str(FOUR) + "$"),
+                CallbackQueryHandler(course_deteil, pattern="^" + courses.key),
+                
             ],
             #END_ROUTES: [
                 #CallbackQueryHandler(start_over, pattern="^" + str(ONE) + "$"),
