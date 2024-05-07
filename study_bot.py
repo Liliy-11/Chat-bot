@@ -7,8 +7,6 @@ Basic example for a bot that uses inline keyboards. For an in-depth explanation,
  https://github.com/python-telegram-bot/python-telegram-bot/wiki/InlineKeyboard-Example.
 """
 import logging
-import os
-import random
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, ConversationHandler
@@ -27,90 +25,151 @@ START_ROUTES, END_ROUTES = range(2)
 # Callback data
 STAGE_ONE, STAGE_TWO, STAGE_THREE, STAGE_FOUR = range(4)
 
+actual = {
+    'course': None,
+    'section': None,
+}
 
-def groupet(array, num=3):
-    return [array[i:i + num] for i in range(0, len(array), num)]
+def grouped(array, num=3):
+    return [array[i:i+num] for i in range(0, len(array), num)]
 
-
-
-class section: 
+class Section:
     id: int
     name: str
-    text: str
-    sections: list
+    text: str = ''
 
     key = 'section_'
-    
-    def __init__(self, id: int, name: str, text: str=''):
+
+    def __init__(self, id: int, name: str, text: str = ''):
         self.id = id
         self.name = name
         self.text = text
 
-   
     def get_inline_button(self):
-        return InlineKeyboardButton(self.name, callback_data=self.key+str(self.id))
+        return InlineKeyboardButton(self.name, callback_data=self.key + str(self.id))
 
-class course: 
+class Course:
     id: int
     name: str
+    sections: list
+    text: str 
+
     key = 'course_'
 
-def __init__(self, id: int, name: str, sections: list):
-    self.id = id
-    self.name = name
-    self.sections = sections
+    def __init__(self, id: int, name: str, sections: list, text: str = ''):
+        self.id = id
+        self.name = name
+        self.sections = sections
+        self.text = text
+
+
+    @property
+    def route_key(self):
+        return self.key + str(self.id)
+
 
     def get_inline_button(self):
-        return InlineKeyboardButton(self.name, callback_data=self.key+str(self.id))
+        return InlineKeyboardButton(self.name, callback_data=self.route_key)
 
-courses = [
-    course(1, "Python", [section(1, 'Урок 1'), section(2, 'Урок 2'), section(3, 'Урок 3')]),
-    course(2, "SQL",[section(1, 'Урок 1'), section(2, 'Урок 2'), section(3, 'Урок 3')]),
-    course(3, "PHP", [section(1, 'Урок 1'), section(2, 'Урок 2'), section(3, 'Урок 3')]),
-    course(4, "Telegram", [section(1, 'Урок 1'), section(2, 'Урок 2'), section(3, 'Урок 3')]),
-    course(5, "HTML", [section(1, 'Урок 1'), section(2, 'Урок 2'), section(3, 'Урок 3')]),
+    def get_back_button(self):
+        return InlineKeyboardButton('Назад', callback_data=self.route_key)
+
+    def get_section_of_string(self, string):
+        pk= get_id_of_str(string, Section.key)
+
+        return get_item_of_list_by_id(self.sections, pk)
+
+COURSES = [
+    Course(1, 'Python', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')],'Курс представляет собой обучающую программу, нацеленную на изучение языка программирования Python'),
+    Course(2, 'SQL', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')], 'Курс представляет собой обучающую программу, нацеленную на изучение языка структурированных запросов'),
+    Course(3, 'PHP', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')], 'Курс представляет собой обучающую программу, нацеленную на изучение языка программирования PHP'),
+    Course(4, 'Telegram', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')], 'Курс представляет собой обучающую программу, направленную на изучение возможностей и функционала мессенджера Telegram'),
+    Course(5, 'HTML', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')], 'Курс представляет собой обучающую программу, нацеленную на изучение основ веб-разработки'),
 ]
 
+def get_id_str(string,k=Course.key):
+    return int(string.replace(k, ''))
 
-def get_course_by_course_key(course_key):
-    id = int(course_key.replace(course.key, ''))
-
-    for c in courses: 
-        if c.id == id:
+def get_item_of_list_by_id(items:list, pk:int):
+    for item in items:
+        if item.id == id:
             return c
-
     return None
 
+ 
+def get_course_by_course_key(course_key):
+    pk = get_id_of_str(course.key, Course.key)
+
+    print(pk)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Sends a message with three inline buttons attached."""
 
-    courses = groupet([c.get_inline_button() for c in courses], 3)
-
+    courses = grouped([c.get_inline_button() for c in COURSES], 3)
+    
     keyboard = courses
-        
+
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("Выберите курс", reply_markup=reply_markup)
+
+    await update.message.reply_text(
+        "Выбор курса:", reply_markup=reply_markup)
+
     return START_ROUTES
 
 
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Parses the CallbackQuery and updates the message text."""
+    query = update.callback_query
 
-async def course_deteil(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # CallbackQueries need to be answered, even if no notification to the user is needed
+    # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
+    await query.answer()
+
+
+    await query.edit_message_text(text=f"Selected option: {query.data}")
+
+
+async def one(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Displays info on how to use the bot."""
+    await update.message.reply_text("STAGE 1")
+
+
+    async def course_detail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Show new choice of buttons"""
     query = update.callback_query
-    course=get_course_by_course_key(query.data)
+    course = get_course_by_course_key(query.data)
 
-    #print(
-     #   'course',
-     #  course.id,
-     # course.name
-    #)
+    section_keyboard = grouped([s.get_inline_button() for s in course.sections], 3)
 
     await query.answer()
     keyboard = section_keyboard
-    replay_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(
-        text= f'курс по: {course_name}', reply_markup=replay_markup)
+        text=f'Курс по: {course.name} \n{course.text}', reply_markup=reply_markup
+    )
+    return START_ROUTES
+
+async def section_detail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Show new choice of buttons"""
+    query = update.callback_query #example: section_1
+    #course = get_course_by_course_key(query.data)
+    course = actual['course']
+    section = course.get_section_of_string(query.data)
+
+    actual['section'] = section
+
+    section_keyboard = [
+        [
+            course.get.back_button(),
+        ]
+    ]
+
+    await query.answer()
+    keyboard = section_keyboard
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        text=f' {Section.name} \n{section.text}', reply_markup=reply_markup
+    )
     return START_ROUTES
 
 def main() -> None:
