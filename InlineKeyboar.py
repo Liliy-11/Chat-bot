@@ -7,8 +7,8 @@ Basic example for a bot that uses inline keyboards. For an in-depth explanation,
  https://github.com/python-telegram-bot/python-telegram-bot/wiki/InlineKeyboard-Example.
 """
 import logging
-import os
 import random
+import os
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
@@ -32,8 +32,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         ],
         [InlineKeyboardButton("Random", callback_data="3")],
         [
-            InlineKeyboardButton("Name for cats", callback_data="4"),
-            InlineKeyboardButton("Name for dogs", callback_data="5"),
+            InlineKeyboardButton("generate name for cat", callback_data="4"),
+            InlineKeyboardButton("generate name for dog", callback_data="5"),
         ],
     ]
 
@@ -41,10 +41,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await update.message.reply_text("Please choose:", reply_markup=reply_markup)
 
-
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
-    query = update.callback_query
+    query = update.callback_query #данные о кнопке
 
     # CallbackQueries need to be answered, even if no notification to the user is needed
     # Some clients may have trouble otherwise. See https://core.telegram.org/bots/api#callbackquery
@@ -53,10 +52,26 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     folder = ''
     txt = ''
 
+    def randomname(txt):
+        t = []
+        for i in txt:
+            t.append(i)
+        name = random.choice(t)
+        return name
+    
+    
     if query.data == '1':
         folder = 'images/cats'
+        txt2 = open('cats.txt', 'r')
+        await query.message.reply_text(
+            text=f'Name: {randomname(txt2)}'
+        )
     elif query.data == '2':
-        folder = 'images/dogs'
+        folder = 'images/dogs' 
+        txt3 = open('dogs.txt', 'r')
+        await query.message.reply_text(
+            text=f'Name: {randomname(txt3)}'
+        )  
     elif query.data == '3':
         d = []
         img = 'images'
@@ -69,19 +84,12 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     elif query.data == '5':
         txt = open('dogs.txt', 'r')
 
-    def randomname(txt):
-        t = []
-        for i in txt:
-            t.append(i)
-        name = random.choice(t)
-        return name
 
     if folder == '':
         await query.message.reply_text(
             text=f'Name: {randomname(txt)}'
         )
-    
-    
+
     else:
         c = []
         for files in os.scandir(folder):
@@ -94,21 +102,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             photo=open(image_path, 'rb')
         )
 
-        if query.data == '1':
-            txt2 = open('cats.txt', 'r')
-            await query.message.reply_text(
-                text=f'Name: {randomname(txt2)}'    
-            )
-        elif query.data == '2':
-            txt3 = open('dogs.txt', 'r')
-            await query.message.reply_text(
-                text=f'Name: {randomname(txt3)}'
-            )
-    
-
 
     await query.edit_message_text(text=f"Selected option: {query.data}")
-
+    
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -119,7 +115,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 def main() -> None:
     """Run the bot."""
     # Create the Application and pass it your bot's token.
-    TOKEN='6734422120:AAFpCuIJzF1PZrd3xGE-IlEEKtDpkcPGcp0'
+    TOKEN = '7059408095:AAHiGwyypdsjEdqfNIj7_TZI65Fc1Vhec3I'
     application = Application.builder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
